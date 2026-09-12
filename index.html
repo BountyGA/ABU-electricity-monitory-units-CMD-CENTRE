@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Campus Power Availability Monitor</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f9; }
+        header { background: #1b365d; color: white; padding: 15px; text-align: center; }
+        #map { height: 75vh; width: 100vw; }
+        .info-panel { padding: 10px; background: white; text-align: center; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Campus Power Monitor</h2>
+    </header>
+
+    <div id="map"></div>
+    <div class="info-panel" id="status-summary">Loading campus feeders...</div>
+
+    <!-- Leaflet JS & Supabase JS SDK -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // Initialize Map centered around campus (Zaria default or your coordinates)
+        const map = L.map('map').setView([11.1511, 7.6485], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Supabase Public Credentials (Safe to expose public anon key in frontend)
+        const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY'; //ngs
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function loadDashboard() {
+            // 1. Fetch registered devices
+            const { data: devices, error: devError } = await supabaseClient.from('devices').select('*');
+            if (devError) {
+                console.error('Error fetching devices:', devError);
+                return;
+            }
+
+            let onlineCount = 0;
+            let offlineCount = 0;
+
+            for (let dev of devices) {
+                // 2. Fetch the latest heartbeat for this device
+                const { data: hbData, error: hbError } = await supabaseClient
+                    .from('heartbeats')
+                    .select('created_at, signal_strength')
+                    .eq('device_id', dev.device_id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                let isOnline = false;
+                let lastSeenText = "Never";
+                let signal = "N/A";
+
+                if (hbData && hbData.length > 0) {
+                    const lastSeenTime = new Date(hbData[0].created_at);
+                    const now = new Date();
+                    const diffSeconds = (now - lastSeenTime) / 1000;
+
+                    signal = hbData[0].signal_strength;
+                    lastSeenText = lastSeenTime.toLocaleTimeString();
+
+                    // Timeout Logic: If heartbeat received within 90 seconds, considered ONLINE
+                    if (diffSeconds < 90) {
+                        isOnline = true;
+                    }
+                }
+
+                if (isOnline) onlineCount++;
+                else offlineCount++;
+
+                // 3. Choose Marker Color (Green = Online, Red = Possible Outage)
+                const markerColor = isOnline ? 'green' : 'red';
+                const statusText = isOnline ? 'ONLINE / POWER AVAILABLE' : 'OFFLINE / POSSIBLE OUTAGE';
+
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`
+                });
+
+                // 4. Add Marker to Map
+                L.marker([dev.latitude, dev.longitude], { icon: customIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>${dev.name}</b><br>
+                        <b>ID:</b> ${dev.device_id}<br>
+                        <b>Location:</b> ${dev.location}<br>
+                        <b>Status:</b> <span style="color:${markerColor}; font-weight:bold;">${statusText}</span><br>
+                        <b>Last Seen:</b> ${lastSeenText}<br>
+                        <b>Signal (CSQ):</b> ${signal}
+                    `);
+            }
+
+            document.getElementById('status-summary').innerHTML = 
+                `🟢 Online Feeders: <b>${onlineCount}</b> | 🔴 Offline / Outages: <b>${offlineCount}</b>`;
+        }
+
+        // Load immediately and refresh every 15 seconds
+        loadDashboard();
+        setInterval(loadDashboard, 15000);
+    </script>
+</body>
+</html>
