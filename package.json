@@ -1,0 +1,7 @@
+{
+  "name": "eatmu-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.33.1"
+  }
+}
