@@ -17,26 +17,27 @@
             font-family: 'Inter', Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background: #f4f4f9; 
+            background: #121212; /* Dark background behind map */
             display: flex;
             flex-direction: column;
-            height: 100vh; /* Locks app to exact viewport height */
-            overflow: hidden; /* Prevents scrollbars */
+            height: 100dvh; /* dynamic viewport height fixes mobile browser bar issues */
+            overflow: hidden; 
         }
 
         /* Upgraded Header */
         header { 
-            background: linear-gradient(135deg, #1b365d, #2a5298); 
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); /* Darker theme header */
             color: white; 
             padding: 16px 20px; 
             text-align: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
             z-index: 1000;
+            flex-shrink: 0;
         }
 
         header h2 {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
             letter-spacing: 0.5px;
         }
@@ -46,53 +47,56 @@
             flex: 1; 
             width: 100vw; 
             z-index: 1;
+            background: #222; /* Fallback before tiles load */
         }
 
         /* Upgraded Info Panel (Footer) */
         .info-panel { 
-            background: white; 
-            padding: 16px 20px; 
+            background: #1e1e1e; /* Dark footer */
+            padding: 12px 10px; 
             text-align: center; 
-            font-size: 15px; 
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+            font-size: 14px; 
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
             z-index: 1000;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px;
-            flex-wrap: wrap; /* Allows wrapping on very small mobile screens */
+            gap: 10px;
+            flex-wrap: wrap; 
+            flex-shrink: 0; /* Prevents panel from being squished by map */
         }
 
         /* Status Badges */
         .badge {
-            padding: 8px 16px;
+            padding: 8px 12px;
             border-radius: 30px;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .badge.online {
-            background-color: #e6f4ea;
-            color: #1e8e3e;
-            border: 1px solid #cce8d6;
+            background-color: #1b4d2e;
+            color: #4ade80;
+            border: 1px solid #22c55e;
         }
 
         .badge.offline {
-            background-color: #fce8e6;
-            color: #d93025;
-            border: 1px solid #fad2cf;
+            background-color: #4a1c1c;
+            color: #f87171;
+            border: 1px solid #ef4444;
         }
 
         .badge b {
             margin-left: 6px;
-            font-size: 16px;
+            font-size: 15px;
+            color: #ffffff;
         }
 
         /* Marker UI Enhancements */
         .custom-marker div {
-            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+            box-shadow: 0 0 12px rgba(0,0,0,0.8);
             transition: transform 0.2s ease-in-out;
         }
         
@@ -100,10 +104,16 @@
             transform: scale(1.2);
         }
 
-        /* Leaflet Popup Beautification */
+        /* Leaflet Popup Beautification (Dark Theme) */
         .leaflet-popup-content-wrapper {
+            background: #2a2a2a;
+            color: #e0e0e0;
             border-radius: 12px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+        
+        .leaflet-popup-tip {
+            background: #2a2a2a;
         }
 
         .leaflet-popup-content {
@@ -114,11 +124,11 @@
         }
 
         .leaflet-popup-content b {
-            color: #1b365d;
+            color: #ffffff;
         }
         
         .loading-text {
-            color: #666;
+            color: #aaa;
             font-style: italic;
         }
     </style>
@@ -140,15 +150,16 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // Initialize Map centered around campus (Zaria default or your coordinates)
+        // Initialize Map centered around campus
         const map = L.map('map').setView([11.1511, 7.6485], 15);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Dark Matter Tile Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap, © CARTO'
         }).addTo(map);
 
-        // Supabase Public Credentials (Safe to expose public anon key in frontend)
+        // Supabase Public Credentials
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY'; //ngs
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -194,13 +205,13 @@
                 if (isOnline) onlineCount++;
                 else offlineCount++;
 
-                // 3. Choose Marker Color (Green = Online, Red = Possible Outage)
-                const markerColor = isOnline ? '#28a745' : '#dc3545';
+                // 3. Choose Marker Color (Bright Green/Red for dark mode)
+                const markerColor = isOnline ? '#22c55e' : '#ef4444';
                 const statusText = isOnline ? 'ONLINE / POWER AVAILABLE' : 'OFFLINE / POSSIBLE OUTAGE';
 
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid white;"></div>`
+                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid #ffffff;"></div>`
                 });
 
                 // 4. Add Marker to Map
@@ -208,7 +219,7 @@
                     .addTo(map)
                     .bindPopup(`
                         <b>${dev.name}</b><br>
-                        <hr style="border:0; border-top:1px solid #eee; margin: 8px 0;">
+                        <hr style="border:0; border-top:1px solid #444; margin: 8px 0;">
                         <b>ID:</b> ${dev.device_id}<br>
                         <b>Location:</b> ${dev.location}<br>
                         <b>Status:</b> <span style="color:${markerColor}; font-weight:bold;">${statusText}</span><br>
@@ -219,8 +230,8 @@
 
             // Enhanced UI injected into the summary panel
             document.getElementById('status-summary').innerHTML = 
-                `<span class="badge online">🟢 Online Feeders: <b>${onlineCount}</b></span>
-                 <span class="badge offline">🔴 Offline / Outages: <b>${offlineCount}</b></span>`;
+                `<span class="badge online">🟢 Online: <b>${onlineCount}</b></span>
+                 <span class="badge offline">🔴 Offline: <b>${offlineCount}</b></span>`;
         }
 
         // Load immediately and refresh every 15 seconds
