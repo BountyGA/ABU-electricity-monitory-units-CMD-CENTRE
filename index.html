@@ -155,9 +155,10 @@
 
         // Dark Matter Tile Layer
         // Standard Color Map
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Dark Matter Tile Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap, © CARTO'
         }).addTo(map);
 
         // Supabase Public Credentials
