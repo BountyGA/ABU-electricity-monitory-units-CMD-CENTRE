@@ -4,13 +4,123 @@
     <title>Campus Power Availability Monitor</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f9; }
-        header { background: #1b365d; color: white; padding: 15px; text-align: center; }
-        #map { height: 75vh; width: 100vw; }
-        .info-panel { padding: 10px; background: white; text-align: center; font-size: 14px; }
+        /* Modern CSS Reset and Flexbox Layout */
+        body { 
+            font-family: 'Inter', Arial, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background: #f4f4f9; 
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* Locks app to exact viewport height */
+            overflow: hidden; /* Prevents scrollbars */
+        }
+
+        /* Upgraded Header */
+        header { 
+            background: linear-gradient(135deg, #1b365d, #2a5298); 
+            color: white; 
+            padding: 16px 20px; 
+            text-align: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        header h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Map fills exactly the remaining space */
+        #map { 
+            flex: 1; 
+            width: 100vw; 
+            z-index: 1;
+        }
+
+        /* Upgraded Info Panel (Footer) */
+        .info-panel { 
+            background: white; 
+            padding: 16px 20px; 
+            text-align: center; 
+            font-size: 15px; 
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap; /* Allows wrapping on very small mobile screens */
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .badge.online {
+            background-color: #e6f4ea;
+            color: #1e8e3e;
+            border: 1px solid #cce8d6;
+        }
+
+        .badge.offline {
+            background-color: #fce8e6;
+            color: #d93025;
+            border: 1px solid #fad2cf;
+        }
+
+        .badge b {
+            margin-left: 6px;
+            font-size: 16px;
+        }
+
+        /* Marker UI Enhancements */
+        .custom-marker div {
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .custom-marker div:hover {
+            transform: scale(1.2);
+        }
+
+        /* Leaflet Popup Beautification */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 14px 16px;
+        }
+
+        .leaflet-popup-content b {
+            color: #1b365d;
+        }
+        
+        .loading-text {
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -20,7 +130,10 @@
     </header>
 
     <div id="map"></div>
-    <div class="info-panel" id="status-summary">Loading campus feeders...</div>
+    
+    <div class="info-panel" id="status-summary">
+        <span class="loading-text">Loading campus feeders...</span>
+    </div>
 
     <!-- Leaflet JS & Supabase JS SDK -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -82,12 +195,12 @@
                 else offlineCount++;
 
                 // 3. Choose Marker Color (Green = Online, Red = Possible Outage)
-                const markerColor = isOnline ? 'green' : 'red';
+                const markerColor = isOnline ? '#28a745' : '#dc3545';
                 const statusText = isOnline ? 'ONLINE / POWER AVAILABLE' : 'OFFLINE / POSSIBLE OUTAGE';
 
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>`
+                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid white;"></div>`
                 });
 
                 // 4. Add Marker to Map
@@ -95,6 +208,7 @@
                     .addTo(map)
                     .bindPopup(`
                         <b>${dev.name}</b><br>
+                        <hr style="border:0; border-top:1px solid #eee; margin: 8px 0;">
                         <b>ID:</b> ${dev.device_id}<br>
                         <b>Location:</b> ${dev.location}<br>
                         <b>Status:</b> <span style="color:${markerColor}; font-weight:bold;">${statusText}</span><br>
@@ -103,8 +217,10 @@
                     `);
             }
 
+            // Enhanced UI injected into the summary panel
             document.getElementById('status-summary').innerHTML = 
-                `🟢 Online Feeders: <b>${onlineCount}</b> | 🔴 Offline / Outages: <b>${offlineCount}</b>`;
+                `<span class="badge online">🟢 Online Feeders: <b>${onlineCount}</b></span>
+                 <span class="badge offline">🔴 Offline / Outages: <b>${offlineCount}</b></span>`;
         }
 
         // Load immediately and refresh every 15 seconds
