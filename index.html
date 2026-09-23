@@ -1,184 +1,234 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="dark">
 <head>
-    <title>Campus Power Availability Monitor</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Campus Power Availability Monitor | BGAA Project Catalyst</title>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Leaflet CSS -->
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#10B981', 600: '#059669', 900: '#064E3B' },
+                        darkbg: '#0B0F17'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        /* Modern CSS Reset and Flexbox Layout */
         body { 
-            font-family: 'Inter', Arial, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            background: #121212; /* Dark background behind map */
-            display: flex;
-            flex-direction: column;
-            height: 100dvh; /* dynamic viewport height fixes mobile browser bar issues */
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background-color: #0B0F17; 
+            color: #E5E7EB; 
+            height: 100dvh; 
+            display: flex; 
+            flex-direction: column; 
             overflow: hidden; 
         }
 
-        /* Upgraded Header */
-        header { 
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); /* Darker theme header */
-            color: white; 
-            padding: 16px 20px; 
-            text-align: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 1000;
-            flex-shrink: 0;
-        }
-
-        header h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        /* Map fills exactly the remaining space */
         #map { 
             flex: 1; 
             width: 100vw; 
-            z-index: 1;
-            background: #222; /* Fallback before tiles load */
+            z-index: 10; 
+            background: #111827; 
         }
 
-        /* Upgraded Info Panel (Footer) */
-        .info-panel { 
-            background: #1e1e1e; /* Dark footer */
-            padding: 12px 10px; 
-            text-align: center; 
-            font-size: 14px; 
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap; 
-            flex-shrink: 0; /* Prevents panel from being squished by map */
+        .leaflet-container { background: #0B0F17 !important; }
+
+        /* Custom Pulsing Markers for EATMU Hardware Pins */
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        /* Status Badges */
-        .badge {
-            padding: 8px 12px;
-            border-radius: 30px;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .pin-online {
+            animation: pulse-green 2s infinite;
+            border-radius: 50%;
+            background: #22c55e;
+            border: 2.5px solid #ffffff;
         }
 
-        .badge.online {
-            background-color: #1b4d2e;
-            color: #4ade80;
-            border: 1px solid #22c55e;
+        .pin-offline {
+            border-radius: 50%;
+            background: #ef4444;
+            border: 2.5px solid #ffffff;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
         }
 
-        .badge.offline {
-            background-color: #4a1c1c;
-            color: #f87171;
-            border: 1px solid #ef4444;
-        }
-
-        .badge b {
-            margin-left: 6px;
-            font-size: 15px;
-            color: #ffffff;
-        }
-
-        /* Marker UI Enhancements */
-        .custom-marker div {
-            box-shadow: 0 0 12px rgba(0,0,0,0.8);
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        .custom-marker div:hover {
-            transform: scale(1.2);
-        }
-
-        /* Leaflet Popup Beautification (Dark Theme) */
-        .leaflet-popup-content-wrapper {
-            background: #2a2a2a;
-            color: #e0e0e0;
-            border-radius: 12px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
-        }
-        
-        .leaflet-popup-tip {
-            background: #2a2a2a;
-        }
-
-        .leaflet-popup-content {
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            line-height: 1.6;
-            margin: 14px 16px;
-        }
-
-        .leaflet-popup-content b {
-            color: #ffffff;
-        }
-        
-        .loading-text {
-            color: #aaa;
-            font-style: italic;
-        }
+        /* Seamless Horizontal Marquee Animation */
+        .marquee-container { overflow: hidden; white-space: nowrap; }
+        .marquee-content { display: inline-flex; animation: marquee 22s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
     </style>
 </head>
 <body>
 
-    <header>
-        <h2>Campus Power Monitor</h2>
+    <!-- Header Navigation -->
+    <header class="bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 py-3 flex items-center justify-between z-50 shrink-0">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold">
+                ⚡
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-white tracking-wide leading-tight">ABU Power Net</h1>
+                <p class="text-[10px] text-gray-400 font-medium">Campus Grid Monitor</p>
+            </div>
+        </div>
+        
+        <!-- Live Summary Badges -->
+        <div id="status-summary-badge" class="flex items-center gap-2">
+            <span class="text-xs text-gray-400 italic">Syncing feeds...</span>
+        </div>
     </header>
 
-    <div id="map"></div>
-    
-    <div class="info-panel" id="status-summary">
-        <span class="loading-text">Loading campus feeders...</span>
+    <!-- Real-Time Ticker Marquee -->
+    <div class="bg-gray-950 border-b border-gray-800/80 py-1.5 marquee-container z-40 shrink-0">
+        <div id="ticker-marquee" class="marquee-content text-xs font-medium text-gray-300 gap-8 items-center px-4">
+            <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <strong>Ahmadu Bello University Grid:</strong> Monitoring live EATMU telemetry...</span>
+            <!-- Dynamically populated from Supabase devices -->
+        </div>
     </div>
 
-    <!-- Leaflet JS & Supabase JS SDK -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- ABU Information / Notice Banner -->
+    <div id="abu-notice" class="bg-gradient-to-r from-emerald-950/80 via-gray-900 to-gray-900 border-b border-emerald-800/40 px-4 py-2 text-xs text-emerald-200 flex items-center justify-between z-30 shrink-0">
+        <div class="flex items-center gap-2 overflow-hidden">
+            <i data-lucide="info" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+            <span class="truncate"><strong>ABU Smart Campus:</strong> Samaru & Chika power grid nodes online.</span>
+        </div>
+        <button onclick="document.getElementById('abu-notice').remove()" class="text-gray-400 hover:text-white text-sm ml-2">✕</button>
+    </div>
+
+    <!-- Main Leaflet Map View -->
+    <main class="relative flex-grow">
+        <div id="map"></div>
+
+        <!-- Quick Stats Overlay Floating Card -->
+        <div class="absolute bottom-4 left-4 z-20 bg-gray-900/90 backdrop-blur-md border border-gray-800 rounded-xl p-3 shadow-2xl max-w-[210px]">
+            <p class="text-[9px] uppercase font-bold tracking-wider text-gray-400">Telemetry Status</p>
+            <p class="text-xs font-semibold text-white mt-0.5" id="last-ping-time">Auto Sync: Every 15s</p>
+            <p class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-medium">
+                <i data-lucide="wifi" class="w-3 h-3"></i> Signal: <span id="gsm-signal-val">Awaiting Node</span>
+            </p>
+        </div>
+    </main>
+
+    <!-- Hotspot Details Bottom Drawer Sheet -->
+    <div id="hotspot-modal" class="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-2xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 max-w-lg mx-auto">
+        <div class="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-3"></div>
+        <div class="flex justify-between items-start">
+            <div>
+                <span id="modal-unit-tag" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">EATMU-001</span>
+                <h3 id="modal-title" class="text-base font-bold text-white mt-1">Building Hotspot</h3>
+                <p id="modal-subtitle" class="text-xs text-gray-400">Samaru Campus</p>
+            </div>
+            <span id="modal-status-pill" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ONLINE</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 mt-4">
+            <div class="bg-gray-800/60 rounded-xl p-2.5 border border-gray-800">
+                <p class="text-[9px] text-gray-400 uppercase font-semibold">Power State</p>
+                <p id="modal-power-state" class="text-xs font-bold text-emerald-400 mt-0.5">220V Mains Active</p>
+            </div>
+            <div class="bg-gray-800/60 rounded-xl p-2.5 border border-gray-800">
+                <p class="text-[9px] text-gray-400 uppercase font-semibold">Last Heartbeat</p>
+                <p id="modal-last-seen" class="text-xs font-bold text-gray-200 mt-0.5">Just now</p>
+            </div>
+        </div>
+
+        <!-- Hotspot Location Preview Image -->
+        <div class="mt-3 rounded-xl overflow-hidden border border-gray-800 h-24 bg-gray-950 relative">
+            <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80" alt="Hotspot Location" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
+            <span class="absolute bottom-2 left-2 text-[10px] text-gray-300 font-medium flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i> EATMU Hardware Installation Site
+            </span>
+        </div>
+
+        <button onclick="closeModal()" class="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 rounded-xl text-xs transition-colors">
+            Close View
+        </button>
+    </div>
+
+    <!-- Monetization & Traffic Analytics Section -->
+    <section class="bg-gray-950 border-t border-gray-800/80 p-3 text-center shrink-0 z-40">
+        <div class="mb-1.5 text-[10px] text-gray-500 flex items-center justify-center gap-2">
+            <span>Site Visits: <strong id="session-counter" class="text-emerald-400 font-mono">1</strong></span>
+            <span>•</span>
+            <span>Grid Refresh Rate: <strong class="text-gray-300">15s</strong></span>
+        </div>
+
+        <!-- Adsterra Ad Banner Slot -->
+        <div class="max-w-md mx-auto min-h-[50px] bg-gray-900/60 border border-dashed border-gray-800 rounded-lg flex flex-col items-center justify-center p-1.5">
+            <span class="text-[9px] uppercase font-bold tracking-widest text-gray-600">Adsterra Ad Placement Slot</span>
+            <!-- Paste your Adsterra Banner Script here when ready -->
+            <!-- <script type="text/javascript" src="//www.topcreativeformat.com/YOUR_KEY/invoke.js"></script> -->
+            <p class="text-[11px] text-gray-400">Monetization Ready</p>
+        </div>
+    </section>
+
+    <!-- Footer Branding -->
+    <footer class="bg-gray-950 border-t border-gray-900 py-2 text-center text-[10px] text-gray-500 shrink-0 z-40">
+        <p>Powered by <strong class="text-gray-300">Project Catalyst</strong> in cooperation with <strong class="text-emerald-400">BGAA Systems</strong></p>
+    </footer>
 
     <script>
-        // Initialize Map centered around campus
-        const map = L.map('map').setView([11.1511, 7.6485], 15);
+        lucide.createIcons();
 
-        // Dark Matter Tile Layer
-        // Standard Color Map
+        // 1. Initialize Leaflet Map Centered on ABU Zaria
+        const map = L.map('map', { zoomControl: false }).setView([11.1511, 7.6485], 15);
+
         // Dark Matter Tile Layer
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap, © CARTO'
         }).addTo(map);
 
-        // Supabase Public Credentials
+        // 2. Supabase Credentials (Preserved from original code)
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY'; //ngs
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        let activeMarkers = [];
+
+        // 3. Core Dashboard Loading Logic (Original Supabase queries + enhanced UI)
         async function loadDashboard() {
-            // 1. Fetch registered devices
+            // Fetch registered devices
             const { data: devices, error: devError } = await supabaseClient.from('devices').select('*');
             if (devError) {
                 console.error('Error fetching devices:', devError);
                 return;
             }
 
+            // Clear old markers before redrawing
+            activeMarkers.forEach(m => map.removeLayer(m));
+            activeMarkers = [];
+
             let onlineCount = 0;
             let offlineCount = 0;
+            let marqueeItemsHtml = '';
 
             for (let dev of devices) {
-                // 2. Fetch the latest heartbeat for this device
+                // Fetch latest heartbeat for this device
                 const { data: hbData, error: hbError } = await supabaseClient
                     .from('heartbeats')
                     .select('created_at, signal_strength')
@@ -195,46 +245,110 @@
                     const now = new Date();
                     const diffSeconds = (now - lastSeenTime) / 1000;
 
-                    signal = hbData[0].signal_strength;
+                    signal = hbData[0].signal_strength || "N/A";
                     lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                    // Timeout Logic: If heartbeat received within 90 seconds, considered ONLINE
+                    // Timeout Logic: Heartbeat within 90 seconds = ONLINE
                     if (diffSeconds < 90) {
                         isOnline = true;
                     }
                 }
 
-                if (isOnline) onlineCount++;
-                else offlineCount++;
+                if (isOnline) {
+                    onlineCount++;
+                    document.getElementById('gsm-signal-val').innerText = `${signal} CSQ`;
+                } else {
+                    offlineCount++;
+                }
 
-                // 3. Choose Marker Color (Bright Green/Red for dark mode)
-                const markerColor = isOnline ? '#22c55e' : '#ef4444';
+                // Custom Pin Styling
+                const markerClass = isOnline ? 'pin-online' : 'pin-offline';
                 const statusText = isOnline ? 'ONLINE / POWER AVAILABLE' : 'OFFLINE / POSSIBLE OUTAGE';
-
+                
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: `<div style="background-color: ${markerColor}; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid #ffffff;"></div>`
+                    html: `<div class="${markerClass}" style="width: 22px; height: 22px;"></div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
                 });
 
-                // 4. Add Marker to Map
-                L.marker([dev.latitude, dev.longitude], { icon: customIcon })
-                    .addTo(map)
-                    .bindPopup(`
-                        <b>${dev.name}</b><br>
-                        <hr style="border:0; border-top:1px solid #444; margin: 8px 0;">
-                        <b>ID:</b> ${dev.device_id}<br>
-                        <b>Location:</b> ${dev.location}<br>
-                        <b>Status:</b> <span style="color:${markerColor}; font-weight:bold;">${statusText}</span><br>
-                        <b>Last Seen:</b> ${lastSeenText}<br>
-                        <b>Signal (CSQ):</b> ${signal}
-                    `);
+                // Add Marker to Map
+                const marker = L.marker([dev.latitude, dev.longitude], { icon: customIcon }).addTo(map);
+                
+                // Clicking marker opens the mobile bottom drawer sheet
+                marker.on('click', () => {
+                    openModal({
+                        id: dev.device_id,
+                        name: dev.name,
+                        location: dev.location,
+                        isOnline: isOnline,
+                        lastSeen: lastSeenText,
+                        signal: signal,
+                        image: dev.image_url || 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80'
+                    });
+                });
+
+                activeMarkers.push(marker);
+
+                // Build Marquee Content
+                const dotColor = isOnline ? 'bg-emerald-400' : 'bg-red-400';
+                const stateText = isOnline ? '⚡ POWER AVAILABLE' : '⚠️ POSSIBLE OUTAGE';
+                const textColor = isOnline ? 'text-emerald-400' : 'text-red-400';
+
+                marqueeItemsHtml += `
+                    <span class="inline-flex items-center gap-1.5 shrink-0">
+                        <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+                        <strong>${dev.name}:</strong> <span class="${textColor} font-semibold">${stateText}</span>
+                    </span>
+                `;
             }
 
-            // Enhanced UI injected into the summary panel
-            document.getElementById('status-summary').innerHTML = 
-                `<span class="badge online">🟢 Online: <b>${onlineCount}</b></span>
-                 <span class="badge offline">🔴 Offline: <b>${offlineCount}</b></span>`;
+            // Populate Marquee (Duplicated for smooth infinite loop)
+            document.getElementById('ticker-marquee').innerHTML = marqueeItemsHtml + marqueeItemsHtml;
+
+            // Update Header Status Badges
+            document.getElementById('status-summary-badge').innerHTML = `
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
+                    🟢 Online: <b>${onlineCount}</b>
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/20 text-red-400 border border-red-500/40 flex items-center gap-1">
+                    🔴 Offline: <b>${offlineCount}</b>
+                </span>
+            `;
+
+            document.getElementById('last-ping-time').innerText = `Synced: ${new Date().toLocaleTimeString()}`;
         }
+
+        // Bottom Sheet Modal Drawer Handlers
+        function openModal(data) {
+            document.getElementById('modal-unit-tag').innerText = data.id;
+            document.getElementById('modal-title').innerText = data.name;
+            document.getElementById('modal-subtitle').innerText = data.location;
+            document.getElementById('modal-power-state').innerText = data.isOnline ? '220V Mains Active' : 'No Power Detected';
+            document.getElementById('modal-last-seen').innerText = `${data.lastSeen} (CSQ: ${data.signal})`;
+            document.getElementById('modal-image').src = data.image;
+
+            const pill = document.getElementById('modal-status-pill');
+            if (data.isOnline) {
+                pill.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                pill.innerText = "ONLINE";
+            } else {
+                pill.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40";
+                pill.innerText = "OFFLINE";
+            }
+
+            document.getElementById('hotspot-modal').classList.remove('translate-y-full');
+        }
+
+        function closeModal() {
+            document.getElementById('hotspot-modal').classList.add('translate-y-full');
+        }
+
+        // Lightweight Site Visit Tracker
+        let visitCounter = localStorage.getItem('abu_power_visits') || 0;
+        visitCounter++;
+        localStorage.setItem('abu_power_visits', visitCounter);
+        document.getElementById('session-counter').innerText = visitCounter;
 
         // Load immediately and refresh every 15 seconds
         loadDashboard();
