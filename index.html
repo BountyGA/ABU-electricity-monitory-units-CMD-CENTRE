@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Campus Power Availability Monitor | BGAA Project Catalyst</title>
+    <title>EATMU | Campus Power Grid Operations</title>
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Inter & JetBrains Mono for telemetry data -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,9 +17,16 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
                     colors: {
-                        brand: { 500: '#10B981', 600: '#059669', 900: '#064E3B' },
-                        darkbg: '#0B0F17'
+                        dark: {
+                            950: '#07090E',
+                            900: '#0D111A',
+                            800: '#161C2A',
+                        }
                     }
                 }
             }
@@ -35,10 +44,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        
         body { 
             font-family: 'Inter', -apple-system, sans-serif; 
-            background-color: #0B0F17; 
-            color: #E5E7EB; 
+            background-color: #07090E; 
+            color: #F3F4F6; 
             height: 100dvh; 
             display: flex; 
             flex-direction: column; 
@@ -46,187 +57,197 @@
         }
 
         #map { 
-    flex: 1 1 auto; 
-    width: 100%; 
-    height: 100%; 
-    min-height: 350px; 
-    z-index: 10; 
-    background: #111827; 
+            flex: 1 1 auto; 
+            width: 100%; 
+            height: 100%; 
+            min-height: 300px; 
+            z-index: 10; 
+            background: #07090E; 
         }
 
-        .leaflet-container { background: #0B0F17 !important; }
+        .leaflet-container { background: #07090E !important; }
 
-        /* Custom Pulsing Markers for EATMU Hardware Pins */
-        @keyframes pulse-green {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(34, 197, 94, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        /* Sleek Radar-Ping Markers */
+        @keyframes radar-pulse {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes alert-pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.8); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 14px rgba(244, 63, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
         }
 
         .pin-online {
-            animation: pulse-green 2s infinite;
+            animation: radar-pulse 2.2s infinite ease-out;
             border-radius: 50%;
-            background: #22c55e;
-            border: 2.5px solid #ffffff;
+            background: #10B981;
+            border: 2px solid #FFFFFF;
         }
 
         .pin-offline {
+            animation: alert-pulse 1.8s infinite ease-out;
             border-radius: 50%;
-            background: #ef4444;
-            border: 2.5px solid #ffffff;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+            background: #F43F5E;
+            border: 2px solid #FFFFFF;
         }
 
-        /* Seamless Horizontal Marquee Animation */
+        /* Seamless Marquee Engine */
         .marquee-container { overflow: hidden; white-space: nowrap; }
-        .marquee-content { display: inline-flex; animation: marquee 22s linear infinite; }
-        @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+        .marquee-content { display: inline-flex; animation: marquee-scroll 28s linear infinite; }
+        @keyframes marquee-scroll { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
     </style>
 </head>
-<body>
+<body class="antialiased selection:bg-emerald-500/30">
 
-    <!-- Header Navigation -->
-    <header class="bg-gray-900/95 backdrop-blur-md border-b border-gray-800 px-4 py-3 flex items-center justify-between z-50 shrink-0">
-        <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold">
-                ⚡
+    <!-- Top Command Header -->
+    <header class="bg-dark-950/80 backdrop-blur-xl border-b border-white/10 px-4 py-2.5 flex items-center justify-between z-50 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="relative flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i data-lucide="zap" class="w-4 h-4 fill-emerald-400/20"></i>
+                </div>
+                <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             </div>
             <div>
-                <h1 class="text-sm font-bold text-white tracking-wide leading-tight">ABU Power Net</h1>
-                <p class="text-[10px] text-gray-400 font-medium">Campus Grid Monitor</p>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xs font-semibold tracking-wider text-white uppercase font-mono">EATMU GRID</h1>
+                    <span class="px-1.5 py-0.2 text-[9px] font-mono uppercase bg-white/5 border border-white/10 rounded text-gray-400">v2.4</span>
+                </div>
+                <p class="text-[10px] text-gray-400 font-medium">Ahmadu Bello University Monitor</p>
             </div>
         </div>
         
-        <!-- Live Summary Badges -->
+        <!-- Status Badges -->
         <div id="status-summary-badge" class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 italic">Syncing feeds...</span>
+            <span class="text-xs text-gray-500 font-mono italic">Connecting Supabase...</span>
         </div>
     </header>
 
-    <!-- Real-Time Ticker Marquee -->
-    <div class="bg-gray-950 border-b border-gray-800/80 py-1.5 marquee-container z-40 shrink-0">
-        <div id="ticker-marquee" class="marquee-content text-xs font-medium text-gray-300 gap-8 items-center px-4">
-            <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <strong>Ahmadu Bello University Grid:</strong> Monitoring live EATMU telemetry...</span>
-            <!-- Dynamically populated from Supabase devices -->
+    <!-- Stream Marquee Ticker -->
+    <div class="bg-dark-900/90 border-b border-white/5 py-1 marquee-container z-40 shrink-0">
+        <div id="ticker-marquee" class="marquee-content text-[11px] font-mono text-gray-400 gap-8 items-center px-4">
+            <span class="inline-flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <strong>GRID STATUS:</strong> Live telemetry active across Samaru & Chika Campuses...</span>
         </div>
     </div>
 
-    <!-- ABU Information / Notice Banner -->
-    <div id="abu-notice" class="bg-gradient-to-r from-emerald-950/80 via-gray-900 to-gray-900 border-b border-emerald-800/40 px-4 py-2 text-xs text-emerald-200 flex items-center justify-between z-30 shrink-0">
-        <div class="flex items-center gap-2 overflow-hidden">
-            <i data-lucide="info" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-            <span class="truncate"><strong>ABU Smart Campus:</strong> Samaru & Chika power grid nodes online.</span>
-        </div>
-        <button onclick="document.getElementById('abu-notice').remove()" class="text-gray-400 hover:text-white text-sm ml-2">✕</button>
-    </div>
-
-    <!-- Main Leaflet Map View -->
+    <!-- Map Canvas Viewport -->
     <main class="relative flex-grow">
         <div id="map"></div>
 
-        <!-- Quick Stats Overlay Floating Card -->
-        <div class="absolute bottom-4 left-4 z-20 bg-gray-900/90 backdrop-blur-md border border-gray-800 rounded-xl p-3 shadow-2xl max-w-[210px]">
-            <p class="text-[9px] uppercase font-bold tracking-wider text-gray-400">Telemetry Status</p>
-            <p class="text-xs font-semibold text-white mt-0.5" id="last-ping-time">Auto Sync: Every 15s</p>
-            <p class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-medium">
-                <i data-lucide="wifi" class="w-3 h-3"></i> Signal: <span id="gsm-signal-val">Awaiting Node</span>
-            </p>
+        <!-- Floating Telemetry HUD Card -->
+        <div class="absolute bottom-4 left-4 z-20 bg-dark-900/85 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-2xl max-w-[220px]">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="text-[9px] font-mono uppercase tracking-widest text-gray-400">Telemetry Sync</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            </div>
+            <p class="text-xs font-mono font-medium text-white" id="last-ping-time">Sync: Loading...</p>
+            <div class="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[11px]">
+                <span class="text-gray-400 flex items-center gap-1">
+                    <i data-lucide="radio" class="w-3 h-3 text-emerald-400"></i> Cellular RSSI
+                </span>
+                <span id="gsm-signal-val" class="font-mono font-semibold text-emerald-400">-- CSQ</span>
+            </div>
         </div>
     </main>
 
-    <!-- Hotspot Details Bottom Drawer Sheet -->
-    <div id="hotspot-modal" class="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 rounded-t-2xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 max-w-lg mx-auto">
-        <div class="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-3"></div>
+    <!-- Hotspot Drawer Modal (Linear Style) -->
+    <div id="hotspot-modal" class="fixed bottom-0 left-0 right-0 z-50 bg-dark-900/95 backdrop-blur-2xl border-t border-white/10 rounded-t-2xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 ease-out max-w-lg mx-auto">
+        <!-- Drawer Handle -->
+        <div class="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4"></div>
+        
         <div class="flex justify-between items-start">
             <div>
-                <span id="modal-unit-tag" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">EATMU-001</span>
-                <h3 id="modal-title" class="text-base font-bold text-white mt-1">Building Hotspot</h3>
-                <p id="modal-subtitle" class="text-xs text-gray-400">Samaru Campus</p>
+                <span id="modal-unit-tag" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">EATMU-001</span>
+                <h3 id="modal-title" class="text-base font-semibold text-white mt-1 tracking-tight">Building Hotspot</h3>
+                <p id="modal-subtitle" class="text-xs text-gray-400 mt-0.5">Samaru Campus</p>
             </div>
-            <span id="modal-status-pill" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">ONLINE</span>
+            <span id="modal-status-pill" class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">ONLINE</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5 mt-4">
-            <div class="bg-gray-800/60 rounded-xl p-2.5 border border-gray-800">
-                <p class="text-[9px] text-gray-400 uppercase font-semibold">Power State</p>
-                <p id="modal-power-state" class="text-xs font-bold text-emerald-400 mt-0.5">220V Mains Active</p>
+        <!-- Metric Grid -->
+        <div class="grid grid-cols-2 gap-2 mt-4">
+            <div class="bg-dark-950/60 rounded-lg p-3 border border-white/5">
+                <span class="text-[10px] font-mono uppercase text-gray-500">Grid Feed</span>
+                <p id="modal-power-state" class="text-xs font-semibold text-emerald-400 mt-1">220V Mains Active</p>
             </div>
-            <div class="bg-gray-800/60 rounded-xl p-2.5 border border-gray-800">
-                <p class="text-[9px] text-gray-400 uppercase font-semibold">Last Heartbeat</p>
-                <p id="modal-last-seen" class="text-xs font-bold text-gray-200 mt-0.5">Just now</p>
+            <div class="bg-dark-950/60 rounded-lg p-3 border border-white/5">
+                <span class="text-[10px] font-mono uppercase text-gray-500">Last Telemetry</span>
+                <p id="modal-last-seen" class="text-xs font-mono font-medium text-gray-200 mt-1">Just now</p>
             </div>
         </div>
 
-        <!-- Hotspot Location Preview Image -->
-        <div class="mt-3 rounded-xl overflow-hidden border border-gray-800 h-24 bg-gray-950 relative">
-            <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80" alt="Hotspot Location" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
-            <span class="absolute bottom-2 left-2 text-[10px] text-gray-300 font-medium flex items-center gap-1">
-                <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i> EATMU Hardware Installation Site
+        <!-- Hotspot Location Site Preview -->
+        <div class="mt-3 rounded-lg overflow-hidden border border-white/10 h-24 bg-dark-950 relative">
+            <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80" alt="Hotspot Site" class="w-full h-full object-cover opacity-80">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent"></div>
+            <span class="absolute bottom-2 left-2 text-[10px] text-gray-300 font-mono flex items-center gap-1">
+                <i data-lucide="map-pin" class="w-3 h-3 text-emerald-400"></i> Hardware Node Location
             </span>
         </div>
 
-        <button onclick="closeModal()" class="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 rounded-xl text-xs transition-colors">
-            Close View
+        <button onclick="closeModal()" class="w-full mt-4 bg-white/10 hover:bg-white/15 text-white font-medium py-2.5 rounded-lg text-xs transition-colors border border-white/10">
+            Dismiss Window
         </button>
     </div>
 
-    <!-- Monetization & Traffic Analytics Section -->
-    <section class="bg-gray-950 border-t border-gray-800/80 p-3 text-center shrink-0 z-40">
-        <div class="mb-1.5 text-[10px] text-gray-500 flex items-center justify-center gap-2">
-            <span>Site Visits: <strong id="session-counter" class="text-emerald-400 font-mono">1</strong></span>
+    <!-- Analytics & Monetization Footer -->
+    <section class="bg-dark-950 border-t border-white/5 p-2.5 text-center shrink-0 z-40">
+        <div class="mb-1 text-[10px] font-mono text-gray-500 flex items-center justify-center gap-3">
+            <span>VISITS: <strong id="session-counter" class="text-gray-300">1</strong></span>
             <span>•</span>
-            <span>Grid Refresh Rate: <strong class="text-gray-300">15s</strong></span>
+            <span>GRID RATE: <strong class="text-gray-300">15s</strong></span>
         </div>
 
-        <!-- Adsterra Ad Banner Slot -->
-        <div class="max-w-md mx-auto min-h-[50px] bg-gray-900/60 border border-dashed border-gray-800 rounded-lg flex flex-col items-center justify-center p-1.5">
-            <span class="text-[9px] uppercase font-bold tracking-widest text-gray-600">Adsterra Ad Placement Slot</span>
-            <!-- Paste your Adsterra Banner Script here when ready -->
-            <!-- <script type="text/javascript" src="//www.topcreativeformat.com/YOUR_KEY/invoke.js"></script> -->
-            <p class="text-[11px] text-gray-400">Monetization Ready</p>
+        <!-- Adsterra Container -->
+        <div class="max-w-md mx-auto min-h-[45px] bg-dark-900/40 border border-dashed border-white/10 rounded-lg flex items-center justify-center p-1">
+            <span class="text-[9px] font-mono uppercase text-gray-600">Adsterra Slot</span>
         </div>
     </section>
 
-    <!-- Footer Branding -->
-    <footer class="bg-gray-950 border-t border-gray-900 py-2 text-center text-[10px] text-gray-500 shrink-0 z-40">
-        <p>Powered by <strong class="text-gray-300">Project Catalyst</strong> in cooperation with <strong class="text-emerald-400">BGAA Systems</strong></p>
+    <!-- Footer -->
+    <footer class="bg-dark-950 border-t border-white/5 py-1.5 text-center text-[10px] font-mono text-gray-600 shrink-0 z-40">
+        <p>PROJECT CATALYST × BGAA SYSTEMS</p>
     </footer>
 
     <script>
         lucide.createIcons();
 
-        // 1. Initialize Leaflet Map Centered on ABU Zaria
-        const map = L.map('map', { zoomControl: false }).setView([11.1511, 7.6485], 15);
+        // 1. Map Initialization with Clean Esri Dark Tiles (No Key Watermark!)
+        const map = L.map('map', { 
+            zoomControl: false,
+            attributionControl: false 
+        }).setView([11.1511, 7.6485], 15);
 
-        // Dark Matter Tile Layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap, © CARTO'
+        // Esri High-Contrast Dark Canvas (Clean, Pro, Watermark-Free)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Base/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19
         }).addTo(map);
 
-        // FIX: Recalculate Leaflet canvas size after mobile browser layout stabilizes
-        setTimeout(() => {
-           map.invalidateSize();
-        }, 300);
+        // Fix Leaflet canvas layout computation for mobile browser viewports
+        setTimeout(() => { map.invalidateSize(); }, 300);
 
-        // 2. Supabase Credentials (Preserved from original code)
+        // 2. Supabase Client Configuration
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let activeMarkers = [];
 
-        // 3. Core Dashboard Loading Logic (Original Supabase queries + enhanced UI)
+        // 3. Telemetry Ingestion Loop
         async function loadDashboard() {
-            // Fetch registered devices
             const { data: devices, error: devError } = await supabaseClient.from('devices').select('*');
             if (devError) {
-                console.error('Error fetching devices:', devError);
+                console.error('Database connection error:', devError);
                 return;
             }
 
-            // Clear old markers before redrawing
             activeMarkers.forEach(m => map.removeLayer(m));
             activeMarkers = [];
 
@@ -235,8 +256,7 @@
             let marqueeItemsHtml = '';
 
             for (let dev of devices) {
-                // Fetch latest heartbeat for this device
-                const { data: hbData, error: hbError } = await supabaseClient
+                const { data: hbData } = await supabaseClient
                     .from('heartbeats')
                     .select('created_at, signal_strength')
                     .eq('device_id', dev.device_id)
@@ -249,13 +269,11 @@
 
                 if (hbData && hbData.length > 0) {
                     const lastSeenTime = new Date(hbData[0].created_at);
-                    const now = new Date();
-                    const diffSeconds = (now - lastSeenTime) / 1000;
+                    const diffSeconds = (new Date() - lastSeenTime) / 1000;
 
                     signal = hbData[0].signal_strength || "N/A";
                     lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                    // Timeout Logic: Heartbeat within 90 seconds = ONLINE
                     if (diffSeconds < 90) {
                         isOnline = true;
                     }
@@ -268,21 +286,16 @@
                     offlineCount++;
                 }
 
-                // Custom Pin Styling
                 const markerClass = isOnline ? 'pin-online' : 'pin-offline';
-                const statusText = isOnline ? 'ONLINE / POWER AVAILABLE' : 'OFFLINE / POSSIBLE OUTAGE';
-                
                 const customIcon = L.divIcon({
                     className: 'custom-marker',
-                    html: `<div class="${markerClass}" style="width: 22px; height: 22px;"></div>`,
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 11]
+                    html: `<div class="${markerClass}" style="width: 20px; height: 20px;"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
                 });
 
-                // Add Marker to Map
                 const marker = L.marker([dev.latitude, dev.longitude], { icon: customIcon }).addTo(map);
                 
-                // Clicking marker opens the mobile bottom drawer sheet
                 marker.on('click', () => {
                     openModal({
                         id: dev.device_id,
@@ -297,50 +310,47 @@
 
                 activeMarkers.push(marker);
 
-                // Build Marquee Content
-                const dotColor = isOnline ? 'bg-emerald-400' : 'bg-red-400';
-                const stateText = isOnline ? '⚡ POWER AVAILABLE' : '⚠️ POSSIBLE OUTAGE';
-                const textColor = isOnline ? 'text-emerald-400' : 'text-red-400';
+                const dotColor = isOnline ? 'bg-emerald-400' : 'bg-rose-500';
+                const stateText = isOnline ? 'GRID MAINS ONLINE' : 'POSSIBLE OUTAGE';
+                const textColor = isOnline ? 'text-emerald-400' : 'text-rose-400';
 
                 marqueeItemsHtml += `
-                    <span class="inline-flex items-center gap-1.5 shrink-0">
-                        <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-                        <strong>${dev.name}:</strong> <span class="${textColor} font-semibold">${stateText}</span>
+                    <span class="inline-flex items-center gap-2 shrink-0">
+                        <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
+                        <strong class="text-gray-200">${dev.name}:</strong> 
+                        <span class="${textColor} font-semibold">${stateText}</span>
                     </span>
                 `;
             }
 
-            // Populate Marquee (Duplicated for smooth infinite loop)
             document.getElementById('ticker-marquee').innerHTML = marqueeItemsHtml + marqueeItemsHtml;
 
-            // Update Header Status Badges
             document.getElementById('status-summary-badge').innerHTML = `
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
-                    🟢 Online: <b>${onlineCount}</b>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    ONLINE: ${onlineCount}
                 </span>
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-500/20 text-red-400 border border-red-500/40 flex items-center gap-1">
-                    🔴 Offline: <b>${offlineCount}</b>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                    OFFLINE: ${offlineCount}
                 </span>
             `;
 
-            document.getElementById('last-ping-time').innerText = `Synced: ${new Date().toLocaleTimeString()}`;
+            document.getElementById('last-ping-time').innerText = new Date().toLocaleTimeString();
         }
 
-        // Bottom Sheet Modal Drawer Handlers
         function openModal(data) {
             document.getElementById('modal-unit-tag').innerText = data.id;
             document.getElementById('modal-title').innerText = data.name;
             document.getElementById('modal-subtitle').innerText = data.location;
-            document.getElementById('modal-power-state').innerText = data.isOnline ? '220V Mains Active' : 'No Power Detected';
-            document.getElementById('modal-last-seen').innerText = `${data.lastSeen} (CSQ: ${data.signal})`;
+            document.getElementById('modal-power-state').innerText = data.isOnline ? '220V Grid Feed Active' : 'No Grid Power Detected';
+            document.getElementById('modal-last-seen').innerText = `${data.lastSeen} (${data.signal} CSQ)`;
             document.getElementById('modal-image').src = data.image;
 
             const pill = document.getElementById('modal-status-pill');
             if (data.isOnline) {
-                pill.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                pill.className = "px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
                 pill.innerText = "ONLINE";
             } else {
-                pill.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-400 border border-red-500/40";
+                pill.className = "px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30";
                 pill.innerText = "OFFLINE";
             }
 
@@ -351,15 +361,14 @@
             document.getElementById('hotspot-modal').classList.add('translate-y-full');
         }
 
-        // Lightweight Site Visit Tracker
-        let visitCounter = localStorage.getItem('abu_power_visits') || 0;
+        // Site Session Counter
+        let visitCounter = localStorage.getItem('eatmu_visits') || 0;
         visitCounter++;
-        localStorage.setItem('abu_power_visits', visitCounter);
+        localStorage.setItem('eatmu_visits', visitCounter);
         document.getElementById('session-counter').innerText = visitCounter;
 
-        // Load immediately and refresh every 15 seconds
         loadDashboard();
         setInterval(loadDashboard, 15000);
     </script>
 </body>
-</html>
+                                                                                                                                               </html>
