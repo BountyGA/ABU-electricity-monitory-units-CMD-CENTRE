@@ -33,7 +33,7 @@
         }
     </script>
 
-    <!-- Leaflet CSS & JS -->
+    <!-- Leaflet Map CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -59,7 +59,6 @@
             flex-direction: column;
         }
 
-        /* Fixed Fullscreen Map Canvas Sizing */
         main {
             position: relative;
             flex: 1 1 auto;
@@ -80,14 +79,14 @@
             background: #06080D; 
         }
 
-        /* High-Reliability CSS Dark Filter for OpenStreetMap Tiles */
+        /* Dark CSS Filter for Map Tiles */
         .leaflet-tile-pane {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
         }
 
         .leaflet-container { background: #06080D !important; }
 
-        /* Sleek Radar-Ping Markers */
+        /* Radar-Ping Markers */
         @keyframes radar-pulse {
             0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
@@ -114,26 +113,22 @@
             border: 2px solid #FFFFFF;
         }
 
-        /* Ticker Animation */
+        /* Marquee Ticker */
         .marquee-container { overflow: hidden; white-space: nowrap; }
         .marquee-content { display: inline-flex; animation: marquee-scroll 28s linear infinite; }
         @keyframes marquee-scroll { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 4px; }
     </style>
 </head>
 <body class="antialiased selection:bg-emerald-500/30">
 
-    <!-- Command Header -->
+    <!-- Header -->
     <header class="bg-dark-950/85 backdrop-blur-xl border-b border-white/10 px-4 py-2.5 flex items-center justify-between z-50 shrink-0">
         <div class="flex items-center gap-3.5">
-            
-            <!-- 3D POPPING THUNDERBOLT LOGO (Inline SVG - Bulletproof Load) -->
+            <!-- 3D Thunderbolt Logo -->
             <div class="relative group cursor-pointer" onclick="recenterMap()">
                 <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-xl blur-md opacity-80 group-hover:opacity-100 transition duration-300"></div>
                 <div class="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 shadow-[0_5px_15px_rgba(16,185,129,0.5),inset_0_1px_1px_rgba(255,255,255,0.7)] transform -rotate-3 group-hover:rotate-0 group-hover:scale-105 transition-all duration-300">
-                    <svg class="w-5 h-5 fill-slate-950 stroke-slate-950" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5">
+                    <svg class="w-5 h-5 fill-slate-950 stroke-slate-950" viewBox="0 0 24 24" stroke-width="1.5">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
                 </div>
@@ -142,36 +137,35 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-xs font-bold tracking-wider text-white uppercase font-mono">EATMU GRID</h1>
-                    <span class="px-1.5 py-0.2 text-[9px] font-mono font-semibold uppercase bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400">v2.7</span>
+                    <span class="px-1.5 py-0.2 text-[9px] font-mono font-semibold uppercase bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400">v2.8</span>
                 </div>
                 <p class="text-[10px] text-gray-400 font-medium">Ahmadu Bello University Monitor</p>
             </div>
         </div>
         
-        <!-- Status Badges & Clock -->
         <div class="flex items-center gap-3">
             <div class="hidden sm:flex flex-col items-end text-right font-mono">
                 <span id="header-clock" class="text-[11px] font-semibold text-gray-200">--:--:--</span>
                 <span class="text-[9px] text-gray-500 uppercase">WAT (GMT+1)</span>
             </div>
             <div id="status-summary-badge" class="flex items-center gap-1.5">
-                <span class="text-xs text-gray-500 font-mono italic">Connecting...</span>
+                <span class="text-xs text-gray-500 font-mono italic">Syncing...</span>
             </div>
         </div>
     </header>
 
-    <!-- Marquee Ticker -->
+    <!-- Marquee Banner -->
     <div class="bg-dark-900/90 border-b border-white/5 py-1 marquee-container z-40 shrink-0">
         <div id="ticker-marquee" class="marquee-content text-[11px] font-mono text-gray-400 gap-8 items-center px-4">
-            <span class="inline-flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> <strong>GRID STATUS:</strong> Initializing live telemetry stream...</span>
+            <span class="inline-flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> <strong>GRID STATUS:</strong> Initializing telemetry streams...</span>
         </div>
     </div>
 
-    <!-- Map Canvas Viewport -->
+    <!-- Map Viewport -->
     <main>
         <div id="map"></div>
 
-        <!-- Floating Telemetry Card -->
+        <!-- Telemetry Sync Floating Box -->
         <div class="absolute bottom-5 left-4 z-20 bg-dark-950/80 backdrop-blur-xl border border-white/10 rounded-xl p-3.5 shadow-2xl max-w-[210px]">
             <div class="flex items-center justify-between gap-2 mb-1.5">
                 <span class="text-[9px] font-mono uppercase tracking-widest text-gray-400">Telemetry Sync</span>
@@ -189,7 +183,7 @@
             </div>
         </div>
 
-        <!-- Map Controls (Pure SVG Buttons) -->
+        <!-- Map Controls -->
         <div class="absolute top-4 right-4 z-20 flex flex-col gap-2">
             <button onclick="zoomInMap()" class="w-9 h-9 bg-dark-950/80 backdrop-blur-xl border border-white/10 rounded-lg flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors shadow-lg">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -203,7 +197,7 @@
         </div>
     </main>
 
-    <!-- Hotspot Drawer Modal -->
+    <!-- Modal Drawer -->
     <div id="hotspot-modal" class="fixed bottom-0 left-0 right-0 z-50 bg-dark-950/95 backdrop-blur-2xl border-t border-white/10 rounded-t-2xl p-5 shadow-2xl transform translate-y-full transition-transform duration-300 ease-out max-w-lg mx-auto">
         <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-4 cursor-pointer" onclick="closeModal()"></div>
         
@@ -227,7 +221,7 @@
             </div>
         </div>
 
-        <div class="mt-3 rounded-lg overflow-hidden border border-white/10 h-24 bg-dark-900 relative">
+        <div class="mt-3 rounded-lg overflow-hidden border border-white/10 h-28 bg-dark-900 relative">
             <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80" alt="Hotspot Site" class="w-full h-full object-cover opacity-80">
             <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent"></div>
             <span class="absolute bottom-2 left-2 text-[10px] text-gray-300 font-mono flex items-center gap-1">
@@ -240,10 +234,10 @@
         </button>
     </div>
 
-    <!-- Analytics & Monetization Footer -->
+    <!-- Monetization & Global Traffic Counter -->
     <section class="bg-dark-950 border-t border-white/5 p-2.5 text-center shrink-0 z-40">
         <div class="mb-1 text-[10px] font-mono text-gray-500 flex items-center justify-center gap-3">
-            <span>VISITS: <strong id="session-counter" class="text-gray-300">1</strong></span>
+            <span>VISITS: <strong id="session-counter" class="text-emerald-400">--</strong></span>
             <span>•</span>
             <span>GRID RATE: <strong class="text-gray-300">15s</strong></span>
         </div>
@@ -261,42 +255,33 @@
     <script>
         // 1. Clock Engine
         function updateClock() {
-            const now = new Date();
             const clockEl = document.getElementById('header-clock');
-            if (clockEl) clockEl.innerText = now.toLocaleTimeString();
+            if (clockEl) clockEl.innerText = new Date().toLocaleTimeString();
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // 2. Leaflet Map setup (Executes immediately without external dependencies)
+        // 2. Map Canvas
         const DEFAULT_CENTER = [11.1511, 7.6485];
         let map;
 
         try {
-            map = L.map('map', { 
-                zoomControl: false,
-                attributionControl: false 
-            }).setView(DEFAULT_CENTER, 15);
-
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                crossOrigin: true
-            }).addTo(map);
-
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(DEFAULT_CENTER, 15);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, crossOrigin: true }).addTo(map);
             setTimeout(() => { if (map) map.invalidateSize(); }, 250);
             window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
         } catch (err) {
-            console.error("Leaflet Map Error:", err);
+            console.error("Leaflet setup error:", err);
         }
 
         function zoomInMap() { if (map) map.zoomIn(); }
         function zoomOutMap() { if (map) map.zoomOut(); }
         function recenterMap() { if (map) map.flyTo(DEFAULT_CENTER, 15, { duration: 1.2 }); }
 
-        // 3. Supabase Setup
+        // 3. Supabase Credentials
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY';
-        
+
         let supabaseClient;
         if (window.supabase) {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -304,20 +289,34 @@
 
         let activeMarkers = [];
 
-        // 4. Telemetry Fetch Engine
+        // 4. Global Visits Tracker (Bypasses Storage Limits)
+        async function trackGlobalVisit() {
+            if (!supabaseClient) return;
+            try {
+                const { data: count, error } = await supabaseClient.rpc('increment_global_visits');
+                if (!error && count) {
+                    document.getElementById('session-counter').innerText = Number(count).toLocaleString();
+                }
+            } catch (e) {
+                console.warn("Global visit tracking offline", e);
+            }
+        }
+        trackGlobalVisit();
+
+        // 5. Optimized Single-Query Telemetry Loader
         async function loadDashboard() {
             if (!supabaseClient) {
-                console.warn("Supabase library not loaded yet.");
                 document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-amber-400 font-mono">Offline Mode</span>`;
                 return;
             }
 
             try {
-                const { data: devices, error: devError } = await supabaseClient.from('devices').select('*');
-                
-                if (devError || !devices) {
-                    console.error('Database query error:', devError);
-                    document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-rose-400 font-mono">DB Conn Error</span>`;
+                // Single fast database view query
+                const { data: gridData, error } = await supabaseClient.from('live_grid_telemetry').select('*');
+
+                if (error || !gridData) {
+                    console.error("Grid query error:", error);
+                    document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-rose-400 font-mono">DB Sync Error</span>`;
                     return;
                 }
 
@@ -328,29 +327,20 @@
 
                 let onlineCount = 0;
                 let offlineCount = 0;
-                let marqueeItemsHtml = '';
+                let marqueeHtml = '';
 
-                for (let dev of devices) {
-                    const { data: hbData } = await supabaseClient
-                        .from('heartbeats')
-                        .select('*')
-                        .eq('device_id', dev.device_id)
-                        .order('created_at', { ascending: false })
-                        .limit(1);
-
+                gridData.forEach(node => {
                     let isOnline = false;
                     let lastSeenText = "Never";
-                    let signal = "N/A";
+                    let signal = node.signal_strength || node.rssi || "N/A";
 
-                    if (hbData && hbData.length > 0) {
-                        const lastSeenTime = new Date(hbData[0].created_at);
-                        const diffSeconds = (new Date() - lastSeenTime) / 1000;
-
-                        signal = hbData[0].signal_strength || hbData[0].rssi || "N/A";
+                    if (node.last_ping) {
+                        const lastSeenTime = new Date(node.last_ping);
+                        const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        // Online threshold: 10 minutes (600s)
-                        if (diffSeconds < 600) {
+                        // Online if pinged within last 10 minutes (600s)
+                        if (diffSec < 600) {
                             isOnline = true;
                         }
                     }
@@ -371,38 +361,38 @@
                             iconAnchor: [10, 10]
                         });
 
-                        const marker = L.marker([dev.latitude, dev.longitude], { icon: customIcon }).addTo(map);
-                        
+                        const marker = L.marker([node.latitude, node.longitude], { icon: customIcon }).addTo(map);
+
                         marker.on('click', () => {
                             openModal({
-                                id: dev.device_id,
-                                name: dev.name,
-                                location: dev.location,
+                                id: node.device_id,
+                                name: node.name,
+                                location: node.location,
                                 isOnline: isOnline,
                                 lastSeen: lastSeenText,
                                 signal: signal,
-                                image: dev.image_url || 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80'
+                                image: node.image_url || 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80'
                             });
                         });
 
                         activeMarkers.push(marker);
                     }
 
-                    const dotColor = isOnline ? 'bg-emerald-400' : 'bg-rose-500';
                     const stateText = isOnline ? 'GRID MAINS ONLINE' : 'POSSIBLE OUTAGE';
-                    const textColor = isOnline ? 'text-emerald-400' : 'text-rose-400';
+                    const stateColor = isOnline ? 'text-emerald-400' : 'text-rose-400';
+                    const dotColor = isOnline ? 'bg-emerald-400' : 'bg-rose-500';
 
-                    marqueeItemsHtml += `
+                    marqueeHtml += `
                         <span class="inline-flex items-center gap-2 shrink-0">
                             <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
-                            <strong class="text-gray-200">${dev.name}:</strong> 
-                            <span class="${textColor} font-semibold">${stateText}</span>
+                            <strong class="text-gray-200">${node.name}:</strong> 
+                            <span class="${stateColor} font-semibold">${stateText}</span>
                         </span>
                     `;
-                }
+                });
 
-                if (marqueeItemsHtml) {
-                    document.getElementById('ticker-marquee').innerHTML = marqueeItemsHtml + marqueeItemsHtml;
+                if (marqueeHtml) {
+                    document.getElementById('ticker-marquee').innerHTML = marqueeHtml + marqueeHtml;
                 }
 
                 document.getElementById('status-summary-badge').innerHTML = `
@@ -417,7 +407,7 @@
                 document.getElementById('last-ping-time').innerText = new Date().toLocaleTimeString();
 
             } catch (err) {
-                console.error("Telemetry sync exception:", err);
+                console.error("Telemetry load exception:", err);
             }
         }
 
@@ -445,13 +435,7 @@
             document.getElementById('hotspot-modal').classList.add('translate-y-full');
         }
 
-        // Session Counter
-        let visitCounter = localStorage.getItem('eatmu_visits') || 0;
-        visitCounter++;
-        localStorage.setItem('eatmu_visits', visitCounter);
-        document.getElementById('session-counter').innerText = visitCounter;
-
-        // Initialize Telemetry
+        // Initialize Telemetry Loop
         loadDashboard();
         setInterval(loadDashboard, 15000);
     </script>
