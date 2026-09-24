@@ -233,8 +233,8 @@
         
         <!-- Background Envelope Photo with Deep Gradients -->
         <div class="absolute inset-0 z-0">
-            <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80" alt="Hotspot Site" class="w-full h-full object-cover opacity-35 filter brightness-90">
-            <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/90 to-dark-950/60"></div>
+            <img id="modal-image" src="https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80" alt="Hotspot Site" class="w-full h-full object-cover opacity-55 filter brightness-95">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/85 to-dark-950/50"></div>
         </div>
 
         <!-- Modal Content Container -->
@@ -288,13 +288,13 @@
     </div>
 
     <script>
-        // Enhanced Google Drive image link resolver
+        // Enhanced Google Drive direct preview resolver
         function fixDriveUrl(url) {
             if (!url) return 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=800&q=80';
             if (url.includes('drive.google.com')) {
                 const match = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
                 if (match && match[1]) {
-                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
                 }
             }
             return url;
@@ -327,7 +327,7 @@
 
         // 3. Supabase Credentials
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmY29vb3VzaGJwbmdjcnRkYXRsIiwicm9sZSI6InFub24iLCJpYXQiOjE3ODkxODQ2MDQsImV4cCI6MjEwNDc2MDYwNH0.kgegOi5qGe1vrd_vsjPr6jRp9xTNkUH7mqgYCuiW1bY';
 
         let supabaseClient;
         if (window.supabase) {
