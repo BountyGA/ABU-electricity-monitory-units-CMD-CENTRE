@@ -254,6 +254,17 @@
     </footer>
 
     <script>
+        // Converts standard Google Drive view links into direct image render links
+function fixDriveUrl(url) {
+    if (!url) return 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80';
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
+        if (match && match[1]) {
+            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+    }
+    return url;
+}
         // 1. Clock Engine
         function updateClock() {
             const clockEl = document.getElementById('header-clock');
@@ -372,7 +383,7 @@
                                 isOnline: isOnline,
                                 lastSeen: lastSeenText,
                                 signal: signal,
-                                image: node.image_url || 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80'
+                                image: fixDriveUrl(node.image_url)
                             });
                         });
 
