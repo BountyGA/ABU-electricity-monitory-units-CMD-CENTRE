@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>EATMU | Campus Power Grid Operations</title>
     
-    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -86,6 +86,12 @@
 
         .leaflet-container { background: #06080D !important; }
 
+        /* Remove Leaflet Default Icon Box */
+        .leaflet-div-icon {
+            background: transparent !important;
+            border: none !important;
+        }
+
         /* Radar-Ping Markers */
         @keyframes radar-pulse {
             0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
@@ -137,7 +143,7 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-xs font-bold tracking-wider text-white uppercase font-mono">EATMU GRID</h1>
-                    <span class="px-1.5 py-0.2 text-[9px] font-mono font-semibold uppercase bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400">v2.8</span>
+                    <span class="px-1.5 py-0.2 text-[9px] font-mono font-semibold uppercase bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400">v2.9</span>
                 </div>
                 <p class="text-[10px] text-gray-400 font-medium">Ahmadu Bello University Monitor</p>
             </div>
@@ -191,7 +197,7 @@
             <button onclick="zoomOutMap()" class="w-9 h-9 bg-dark-950/80 backdrop-blur-xl border border-white/10 rounded-lg flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors shadow-lg">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <button onclick="recenterMap()" class="w-9 h-9 bg-dark-950/80 backdrop-blur-xl border border-white/10 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-white/10 transition-colors shadow-lg" title="Recenter Grid">
+            <button onclick="recenterMap()" class="w-9 h-9 bg-dark-950/80 backdrop-blur-xl border border-white/10 rounded-lg flex items-center justify-center text-emerald-400 hover:bg-white/10 transition-colors shadow-lg" title="Focus Nodes">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
             </button>
         </div>
@@ -262,7 +268,7 @@
         updateClock();
 
         // 2. Map Canvas
-        const DEFAULT_CENTER = [11.1511, 7.6485];
+        const DEFAULT_CENTER = [11.1541, 7.6249];
         let map;
 
         try {
@@ -276,7 +282,15 @@
 
         function zoomInMap() { if (map) map.zoomIn(); }
         function zoomOutMap() { if (map) map.zoomOut(); }
-        function recenterMap() { if (map) map.flyTo(DEFAULT_CENTER, 15, { duration: 1.2 }); }
+        
+        function recenterMap() { 
+            if (activeMarkers.length > 0) {
+                const group = L.featureGroup(activeMarkers);
+                map.fitBounds(group.getBounds().pad(0.2));
+            } else {
+                map.flyTo(DEFAULT_CENTER, 15, { duration: 1.2 });
+            }
+        }
 
         // 3. Supabase Credentials
         const SUPABASE_URL = 'https://ufcoooushbpngcrtdatl.supabase.co';
@@ -288,8 +302,9 @@
         }
 
         let activeMarkers = [];
+        let hasAutoCentered = false;
 
-        // 4. Global Visits Tracker (Bypasses Storage Limits)
+        // 4. Global Visits Tracker
         async function trackGlobalVisit() {
             if (!supabaseClient) return;
             try {
@@ -303,7 +318,7 @@
         }
         trackGlobalVisit();
 
-        // 5. Optimized Single-Query Telemetry Loader
+        // 5. Optimized Telemetry Loader with Auto Focus
         async function loadDashboard() {
             if (!supabaseClient) {
                 document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-amber-400 font-mono">Offline Mode</span>`;
@@ -311,7 +326,6 @@
             }
 
             try {
-                // Single fast database view query
                 const { data: gridData, error } = await supabaseClient.from('live_grid_telemetry').select('*');
 
                 if (error || !gridData) {
@@ -339,7 +353,6 @@
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        // Online if pinged within last 10 minutes (600s)
                         if (diffSec < 600) {
                             isOnline = true;
                         }
@@ -352,22 +365,25 @@
                         offlineCount++;
                     }
 
-                    if (map) {
+                    if (map && node.latitude && node.longitude) {
+                        const lat = parseFloat(node.latitude);
+                        const lng = parseFloat(node.longitude);
+
                         const markerClass = isOnline ? 'pin-online' : 'pin-offline';
                         const customIcon = L.divIcon({
                             className: 'custom-marker',
-                            html: `<div class="${markerClass}" style="width: 20px; height: 20px;"></div>`,
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
+                            html: `<div class="${markerClass}" style="width: 22px; height: 22px;"></div>`,
+                            iconSize: [22, 22],
+                            iconAnchor: [11, 11]
                         });
 
-                        const marker = L.marker([node.latitude, node.longitude], { icon: customIcon }).addTo(map);
+                        const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
 
                         marker.on('click', () => {
                             openModal({
                                 id: node.device_id,
-                                name: node.name,
-                                location: node.location,
+                                name: node.name || 'EATMU Unit',
+                                location: node.location || 'Samaru Campus',
                                 isOnline: isOnline,
                                 lastSeen: lastSeenText,
                                 signal: signal,
@@ -385,11 +401,18 @@
                     marqueeHtml += `
                         <span class="inline-flex items-center gap-2 shrink-0">
                             <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span>
-                            <strong class="text-gray-200">${node.name}:</strong> 
+                            <strong class="text-gray-200">${node.name || node.device_id}:</strong> 
                             <span class="${stateColor} font-semibold">${stateText}</span>
                         </span>
                     `;
                 });
+
+                // Auto-center camera on device markers on first load
+                if (!hasAutoCentered && activeMarkers.length > 0) {
+                    hasAutoCentered = true;
+                    const group = L.featureGroup(activeMarkers);
+                    map.fitBounds(group.getBounds().pad(0.3));
+                }
 
                 if (marqueeHtml) {
                     document.getElementById('ticker-marquee').innerHTML = marqueeHtml + marqueeHtml;
