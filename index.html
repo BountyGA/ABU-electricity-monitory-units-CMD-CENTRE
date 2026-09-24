@@ -86,32 +86,52 @@
 
         .leaflet-container { background: #06080D !important; }
 
-        /* Radar-Ping Markers */
-        @keyframes radar-pulse {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        /* Custom Popping Location Markers */
+        @keyframes pin-pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
-        @keyframes alert-pulse {
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes alert-ring {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.85); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 16px rgba(244, 63, 94, 0); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(244, 63, 94, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
         }
 
-        .pin-online {
-            animation: radar-pulse 2.2s infinite ease-out;
-            border-radius: 50%;
-            background: #10B981;
-            border: 2px solid #FFFFFF;
+        .map-badge-pin {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(12, 15, 23, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4px 10px 4px 6px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            cursor: pointer;
+            animation: pin-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transition: transform 0.2s ease;
         }
 
-        .pin-offline {
-            animation: alert-pulse 1.8s infinite ease-out;
-            border-radius: 50%;
-            background: #F43F5E;
-            border: 2px solid #FFFFFF;
+        .map-badge-pin:hover {
+            transform: scale(1.05);
         }
+
+        .map-badge-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .pin-online-glow { background: #10B981; animation: pulse-ring 2s infinite ease-out; }
+        .pin-offline-glow { background: #F43F5E; animation: alert-ring 1.8s infinite ease-out; }
 
         /* Marquee Ticker */
         .marquee-container { overflow: hidden; white-space: nowrap; }
@@ -234,37 +254,38 @@
         </button>
     </div>
 
-    <!-- Monetization & Global Traffic Counter -->
-    <section class="bg-dark-950 border-t border-white/5 p-2.5 text-center shrink-0 z-40">
-        <div class="mb-1 text-[10px] font-mono text-gray-500 flex items-center justify-center gap-3">
+    <!-- Global Traffic Counter & Floating Social Bar Wrapper -->
+    <section class="bg-dark-950 border-t border-white/5 p-2 text-center shrink-0 z-40">
+        <div class="text-[10px] font-mono text-gray-500 flex items-center justify-center gap-3">
             <span>VISITS: <strong id="session-counter" class="text-emerald-400">--</strong></span>
             <span>•</span>
             <span>GRID RATE: <strong class="text-gray-300">15s</strong></span>
         </div>
-
-        <div class="max-w-md mx-auto min-h-[45px] bg-dark-900/40 border border-dashed border-white/10 rounded-lg flex items-center justify-center p-1">
-            <span class="text-[9px] font-mono uppercase text-gray-600"><script async="async" data-cfasync="false" src="https://pl31487584.profitableratecpmnetwork.com/7985ffb83de0e6876446791d9dbc4bcd/invoke.js"></script>
-<div id="container-7985ffb83de0e6876446791d9dbc4bcd"></div></span>
-        </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-dark-950 border-t border-white/5 py-1.5 text-center text-[10px] font-mono text-gray-600 shrink-0 z-40">
+    <footer class="bg-dark-950 border-t border-white/5 py-1 text-center text-[10px] font-mono text-gray-600 shrink-0 z-40">
         <p>PROJECT CATALYST × BGAA SYSTEMS</p>
     </footer>
 
+    <!-- Floating Social Bar (Positioned nicely above the bottom phone bounds) -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto">
+        <script src="https://pl31487884.profitableratecpmnetwork.com/1c/79/13/1c7913df99e6ec60a0c200676573b3ff.js"></script>
+    </div>
+
     <script>
-        // Converts standard Google Drive view links into direct image render links
-function fixDriveUrl(url) {
-    if (!url) return 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80';
-    if (url.includes('drive.google.com')) {
-        const match = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
-        if (match && match[1]) {
-            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        // Enhanced Google Drive image link resolver
+        function fixDriveUrl(url) {
+            if (!url) return 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=600&q=80';
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([^\/]+)/) || url.match(/id=([^&]+)/);
+                if (match && match[1]) {
+                    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            return url;
         }
-    }
-    return url;
-}
+
         // 1. Clock Engine
         function updateClock() {
             const clockEl = document.getElementById('header-clock');
@@ -301,7 +322,7 @@ function fixDriveUrl(url) {
 
         let activeMarkers = [];
 
-        // 4. Global Visits Tracker (Bypasses Storage Limits)
+        // 4. Global Visits Tracker
         async function trackGlobalVisit() {
             if (!supabaseClient) return;
             try {
@@ -315,7 +336,7 @@ function fixDriveUrl(url) {
         }
         trackGlobalVisit();
 
-        // 5. Optimized Single-Query Telemetry Loader
+        // 5. Telemetry Loader & Popping Marker Renderer
         async function loadDashboard() {
             if (!supabaseClient) {
                 document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-amber-400 font-mono">Offline Mode</span>`;
@@ -323,7 +344,6 @@ function fixDriveUrl(url) {
             }
 
             try {
-                // Single fast database view query
                 const { data: gridData, error } = await supabaseClient.from('live_grid_telemetry').select('*');
 
                 if (error || !gridData) {
@@ -351,7 +371,6 @@ function fixDriveUrl(url) {
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        // Online if pinged within last 10 minutes (600s)
                         if (diffSec < 600) {
                             isOnline = true;
                         }
@@ -365,12 +384,19 @@ function fixDriveUrl(url) {
                     }
 
                     if (map) {
-                        const markerClass = isOnline ? 'pin-online' : 'pin-offline';
+                        const glowClass = isOnline ? 'pin-online-glow' : 'pin-offline-glow';
+                        
+                        // Styled location pill marker with name text
                         const customIcon = L.divIcon({
-                            className: 'custom-marker',
-                            html: `<div class="${markerClass}" style="width: 20px; height: 20px;"></div>`,
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
+                            className: 'custom-location-badge',
+                            html: `
+                                <div class="map-badge-pin">
+                                    <span class="map-badge-dot ${glowClass}"></span>
+                                    <span class="text-[10px] font-mono font-bold tracking-tight text-gray-200">${node.name || 'Node'}</span>
+                                </div>
+                            `,
+                            iconSize: [110, 30],
+                            iconAnchor: [55, 15]
                         });
 
                         const marker = L.marker([node.latitude, node.longitude], { icon: customIcon }).addTo(map);
