@@ -384,17 +384,16 @@
                     let signal = node.signal_strength || node.rssi || "N/A";
 
                     if (node.last_ping) {
-                        // Force JavaScript to recognize the Supabase time as UTC by appending 'Z'
-                        const timeString = node.last_ping.endsWith('Z') ? node.last_ping : node.last_ping + 'Z';
-                        const lastSeenTime = new Date(timeString);
-                        
+                        // Let JavaScript read the native Supabase timestamp without modifying it
+                        const lastSeenTime = new Date(node.last_ping);
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        // Changed from 600 (10 mins) to 90 seconds. 
-                        // It will turn red if it misses 6 heartbeats (assuming 15s intervals)
-                        if (diffSec >= 0 && diffSec < 77) {
+                        // Allows up to 60 seconds of future clock drift, and times out after 77 seconds
+                        if (diffSec > -60 && diffSec < 77) {
                             isOnline = true;
+                        } else if (diffSec < -60) {
+                            console.warn("Hardware time is too far in the future:", diffSec);
                         }
                     }
 
