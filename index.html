@@ -384,16 +384,12 @@
                     let signal = node.signal_strength || node.rssi || "N/A";
 
                     if (node.last_ping) {
-                        // Let JavaScript read the native Supabase timestamp without modifying it
                         const lastSeenTime = new Date(node.last_ping);
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        // Allows up to 60 seconds of future clock drift, and times out after 77 seconds
-                        if (diffSec > -60 && diffSec < 77) {
+                        if (diffSec < 77) {
                             isOnline = true;
-                        } else if (diffSec < -60) {
-                            console.warn("Hardware time is too far in the future:", diffSec);
                         }
                     }
 
