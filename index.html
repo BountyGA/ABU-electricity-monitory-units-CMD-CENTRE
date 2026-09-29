@@ -384,11 +384,16 @@
                     let signal = node.signal_strength || node.rssi || "N/A";
 
                     if (node.last_ping) {
-                        const lastSeenTime = new Date(node.last_ping);
+                        // Force JavaScript to recognize the Supabase time as UTC by appending 'Z'
+                        const timeString = node.last_ping.endsWith('Z') ? node.last_ping : node.last_ping + 'Z';
+                        const lastSeenTime = new Date(timeString);
+                        
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        if (diffSec < 600) {
+                        // Changed from 600 (10 mins) to 90 seconds. 
+                        // It will turn red if it misses 6 heartbeats (assuming 15s intervals)
+                        if (diffSec >= 0 && diffSec < 90) {
                             isOnline = true;
                         }
                     }
