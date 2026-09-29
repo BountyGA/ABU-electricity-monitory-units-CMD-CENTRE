@@ -355,6 +355,11 @@
 
         // 5. Telemetry Loader & Popping Marker Renderer
         async function loadDashboard() {
+            // KILLSWITCH: Do not query Supabase if the tab or browser is hidden/minimized
+            if (document.hidden) {
+                return;
+            }
+
             if (!supabaseClient) {
                 document.getElementById('status-summary-badge').innerHTML = `<span class="text-xs text-amber-400 font-mono">Offline Mode</span>`;
                 return;
@@ -384,12 +389,16 @@
                     let signal = node.signal_strength || node.rssi || "N/A";
 
                     if (node.last_ping) {
+                        // Let JavaScript read the native Supabase timestamp without modifying it
                         const lastSeenTime = new Date(node.last_ping);
                         const diffSec = (new Date() - lastSeenTime) / 1000;
                         lastSeenText = lastSeenTime.toLocaleTimeString();
 
-                        if (diffSec < 77) {
+                        // Allows up to 60 seconds of future clock drift, and times out after 77 seconds
+                        if (diffSec > -60 && diffSec < 77) {
                             isOnline = true;
+                        } else if (diffSec < -60) {
+                            console.warn("Hardware time is too far in the future:", diffSec);
                         }
                     }
 
@@ -503,6 +512,13 @@
         // Initialize Telemetry Loop
         loadDashboard();
         setInterval(loadDashboard, 15000);
+
+        // Resume pulling data instantly when the user returns to the tab
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                loadDashboard();
+            }
+        });
     </script>
 </body>
 </html>
